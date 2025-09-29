@@ -35,7 +35,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'   # thay bằng version bạn dùng
+          flutter-version: '3.35.3'   # thay bằng version bạn dùng
           channel: 'stable'
 
       # Cache dependencies để build nhanh hơn
