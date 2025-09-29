@@ -1,85 +1,71 @@
-#name: Test Workflow
-#
-#on: [push]
-#
-#jobs:
-#  test:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Print Flutter version
-#        run: flutter --version || echo "Flutter not installed"
+name: Flutter CI/CD   # 👈 Tên workflow, sẽ hiện trong tab Actions của repo
 
-name: Flutter CI/CD
-
-on:
-  push:
+on:                   # 👈 Xác định khi nào workflow chạy
+  push:               # Khi có push code vào branch main
     branches:
       - main
-  pull_request:
+  pull_request:       # Khi tạo pull request merge vào main
     branches:
       - main
 
 jobs:
   build:
-    name: Build & Test
-    runs-on: ubuntu-latest
+    name: Build & Test              # 👈 Tên job
+    runs-on: ubuntu-latest          # 👈 Chạy trên máy ảo Ubuntu
 
-    steps:
-      # Lấy source code
+    steps:                          # 👇 Các bước trong job
+      # 1. Checkout code từ repo về máy ảo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Setup Flutter
+      # 2. Cài đặt Flutter SDK
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.3'   # thay bằng version bạn dùng
-          channel: 'stable'
+          flutter-version: '3.35.3' # 👈 Flutter version bạn đang dùng
+          channel: 'stable'         # 👈 Channel: stable / beta / dev
 
-      # Cache dependencies để build nhanh hơn
+      # 3. Cache dependencies để build nhanh hơn
       - name: Cache Flutter dependencies
         uses: actions/cache@v3
         with:
-          path: |
-            ~/.pub-cache
+          path: |                   # 👈 Những thư mục sẽ cache
+            ~/.pub-cache            # Gói pub (Dart/Flutter packages)
             ${{ runner.tool_cache }}/flutter
-          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
+          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}  # 👈 Cache theo pubspec.lock
           restore-keys: |
             ${{ runner.os }}-flutter-
 
-      # Cài đặt package
+      # 4. Cài đặt dependencies
       - name: Install dependencies
         run: flutter pub get
 
-      # Phân tích code (lint check)
+      # 5. Phân tích code (lint check)
       - name: Run Flutter analyze
         run: flutter analyze
 
-      # Chạy test
+      # 6. Chạy test (unit/widget tests)
       - name: Run Flutter tests
         run: flutter test
 
-      # Build APK release
+      # 7. Build APK release
       - name: Build release APK
         run: flutter build apk --release
 
-      # Upload APK artifact (có thể tải từ tab Actions sau khi build)
+      # 8. Upload APK artifact (có thể tải từ tab Actions sau khi build xong)
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      # Build AAB release
+      # 9. Build AAB release (App Bundle để upload lên Google Play)
       - name: Build release AAB
         run: flutter build appbundle --release
 
-      # Upload AAB artifact
+      # 10. Upload AAB artifact
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
-
