@@ -1,12 +1,85 @@
-name: Test Workflow
+#name: Test Workflow
+#
+#on: [push]
+#
+#jobs:
+#  test:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#      - name: Print Flutter version
+#        run: flutter --version || echo "Flutter not installed"
 
-on: [push]
+name: Flutter CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  test:
+  build:
+    name: Build & Test
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      # Lấy source code
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Print Flutter version
-        run: flutter --version || echo "Flutter not installed"
+
+      # Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'   # thay bằng version bạn dùng
+          channel: 'stable'
+
+      # Cache dependencies để build nhanh hơn
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            ${{ runner.tool_cache }}/flutter
+          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      # Cài đặt package
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Phân tích code (lint check)
+      - name: Run Flutter analyze
+        run: flutter analyze
+
+      # Chạy test
+      - name: Run Flutter tests
+        run: flutter test
+
+      # Build APK release
+      - name: Build release APK
+        run: flutter build apk --release
+
+      # Upload APK artifact (có thể tải từ tab Actions sau khi build)
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      # Build AAB release
+      - name: Build release AAB
+        run: flutter build appbundle --release
+
+      # Upload AAB artifact
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/bundle/release/app-release.aab
+
