@@ -1,0 +1,94 @@
+name: Flutter Flavors CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Chọn flavor để build'
+        required: true
+        default: 'dev'   # dev hoặc prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_VERSION: '3.35.3'
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      # 3. Cache dependencies
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            ${{ runner.tool_cache }}/flutter
+          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Extract version info from build.gradle.kts
+      - name: Extract version info
+        run: |
+          VERSION_CODE=$(grep 'versionCode' android/app/build.gradle.kts | grep -v '//' | awk -F'=' '{gsub(/ /,"",$2); print $2}')
+          VERSION_NAME=$(grep 'versionName' android/app/build.gradle.kts | grep -v '//' | awk -F'"' '{print $2}')
+          
+          if ! [[ "$VERSION_CODE" =~ ^[0-9]+$ ]]; then
+            VERSION_CODE=1
+          fi
+          
+          if [ -z "$VERSION_NAME" ]; then
+            VERSION_NAME="1.0.0"
+          fi
+          
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+
+      # 6. Set file version with date
+      - name: Set file version with date
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          FILE_VERSION="${{ env.VERSION_NAME }}-${{ github.event.inputs.flavor }}-${TODAY}"
+          echo "FILE_VERSION=$FILE_VERSION" >> $GITHUB_ENV
+
+      # 7. Build APK
+      - name: Build APK
+        run: flutter build apk --release --flavor ${{ github.event.inputs.flavor }} -t lib/main.dart --build-name=${{ env.VERSION_NAME }} --build-number=${{ env.VERSION_CODE }}
+
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-${{ github.event.inputs.flavor }}-${{ env.FILE_VERSION }}.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ github.event.inputs.flavor }}-apk
+          path: build/app/outputs/flutter-apk/app-${{ github.event.inputs.flavor }}-${{ env.FILE_VERSION }}.apk
+
+      # 8. Build AAB
+      - name: Build AAB
+        run: flutter build appbundle --release --flavor ${{ github.event.inputs.flavor }} -t lib/main.dart --build-name=${{ env.VERSION_NAME }} --build-number=${{ env.VERSION_CODE }}
+
+      - name: Rename AAB
+        run: |
+          mv build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/app-${{ github.event.inputs.flavor }}-${{ env.FILE_VERSION }}.aab
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ github.event.inputs.flavor }}-aab
+          path: build/app/outputs/bundle/release/app-${{ github.event.inputs.flavor }}-${{ env.FILE_VERSION }}.aab

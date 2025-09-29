@@ -1,0 +1,18 @@
+flavors:
+  dev:
+    app:
+      name: "Example CICD Dev"
+
+    android:
+      applicationId: "com.example.example_cicd"
+    ios:
+      bundleId: "com.example.apple"
+
+  prod:
+    app:
+      name: "Example CICD Prod"
+
+    android:
+      applicationId: "com.example.example_cicd.prod"
+    ios:
+      bundleId: "com.example.banana"
