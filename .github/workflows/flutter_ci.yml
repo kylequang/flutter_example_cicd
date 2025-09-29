@@ -1,12 +1,12 @@
 name: Flutter CI/CD   # 👈 Tên workflow, sẽ hiện trong tab Actions của repo
 
-on:                   # 👈 Xác định khi nào workflow chạy
-  push:               # Khi có push code vào branch main
+on: # 👈 Xác định khi nào workflow chạy
+  push: # Khi có push code vào branch main
     branches:
       - main
       - dev
       #- '**'   # 👈 tất cả branch
-  pull_request:       # Khi tạo pull request merge vào main
+  pull_request: # Khi tạo pull request merge vào main
     branches:
       - main
       - dev
@@ -19,7 +19,7 @@ jobs:
     name: Build & Test              # 👈 Tên job
     runs-on: ubuntu-latest          # 👈 Chạy trên máy ảo Ubuntu
 
-    steps:                          # 👇 Các bước trong job
+    steps: # 👇 Các bước trong job
       # 1. Checkout code từ repo về máy ảo
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -80,24 +80,38 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
+      - name: Set file version with date
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          FILE_VERSION="${VERSION_NAME}-${TODAY}"
+          echo "FILE_VERSION=$FILE_VERSION" >> $GITHUB_ENV
+
       # 7. Build APK release
       - name: Build release APK
         run: flutter build apk --release --build-name=${{ env.VERSION_NAME }} --build-number=${{ env.VERSION_CODE }}
+
+      - name: Rename APK with version and date
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release-${{ env.FILE_VERSION }}.apk
 
       # 8. Upload APK artifact (có thể tải từ tab Actions sau khi build xong)
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release-${{ env.FILE_VERSION }}.apk
 
       # 9. Build AAB release (App Bundle để upload lên Google Play)
       - name: Build release AAB
         run: flutter build appbundle --release --build-name=${{ env.VERSION_NAME }} --build-number=${{ env.VERSION_CODE }}
+
+      - name: Rename AAB with version and date
+        run: |
+          mv build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/app-release-${{ env.FILE_VERSION }}.aab 
 
       # 10. Upload AAB artifact
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: app-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/bundle/release/app-release-${{ env.FILE_VERSION }}.aab
