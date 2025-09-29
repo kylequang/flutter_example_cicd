@@ -48,11 +48,26 @@ jobs:
 
       - name: Extract version info from build.gradle
         run: |
-          VERSION_CODE=$(grep versionCode android/app/build.gradle | awk '{print $2}')
-          VERSION_NAME=$(grep versionName android/app/build.gradle | awk '{print $2}' | tr -d '"')
+          # Lấy versionCode (loại bỏ comment)
+          VERSION_CODE=$(grep 'versionCode' android/app/build.gradle | grep -v '//' | awk '{print $2}')
+          # Lấy versionName (loại bỏ comment và dấu ngoặc kép)
+          VERSION_NAME=$(grep 'versionName' android/app/build.gradle | grep -v '//' | awk '{print $2}' | tr -d '"')
+
+          # fallback nếu rỗng hoặc versionCode không phải số
+          if ! [[ "$VERSION_CODE" =~ ^[0-9]+$ ]]; then
+            echo "⚠️ VERSION_CODE invalid, using 1"
+            VERSION_CODE=1
+          fi
+
+          if [ -z "$VERSION_NAME" ]; then
+            echo "⚠️ VERSION_NAME empty, using 1.0.0"
+            VERSION_NAME="1.0.0"
+          fi
+
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           echo "👉 Detected versionCode=$VERSION_CODE, versionName=$VERSION_NAME"
+      
 
       # 5. Phân tích code (lint check)
       - name: Run Flutter analyze
