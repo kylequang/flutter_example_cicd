@@ -4,9 +4,15 @@ on:                   # 👈 Xác định khi nào workflow chạy
   push:               # Khi có push code vào branch main
     branches:
       - main
+      - dev
+      #- '**'   # 👈 tất cả branch
   pull_request:       # Khi tạo pull request merge vào main
     branches:
       - main
+      - dev
+
+  #Thêm workflow_dispatch để có thể tự bấm chạy trong tab Actions mà không cần commit:
+  workflow_dispatch:   # 👈 thêm cái này
 
 jobs:
   build:
@@ -40,6 +46,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Extract version info from build.gradle
+        run: |
+          VERSION_CODE=$(grep versionCode android/app/build.gradle | awk '{print $2}')
+          VERSION_NAME=$(grep versionName android/app/build.gradle | awk '{print $2}' | tr -d '"')
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "👉 Detected versionCode=$VERSION_CODE, versionName=$VERSION_NAME"
+
       # 5. Phân tích code (lint check)
       - name: Run Flutter analyze
         run: flutter analyze
@@ -50,7 +64,7 @@ jobs:
 
       # 7. Build APK release
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --build-name=${{ env.VERSION_NAME }} --build-number=${{ env.VERSION_CODE }}
 
       # 8. Upload APK artifact (có thể tải từ tab Actions sau khi build xong)
       - name: Upload APK
@@ -61,7 +75,7 @@ jobs:
 
       # 9. Build AAB release (App Bundle để upload lên Google Play)
       - name: Build release AAB
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --build-name=${{ env.VERSION_NAME }} --build-number=${{ env.VERSION_CODE }}
 
       # 10. Upload AAB artifact
       - name: Upload AAB
