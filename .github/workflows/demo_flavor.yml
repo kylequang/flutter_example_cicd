@@ -71,14 +71,14 @@ jobs:
       - name: Rename APK
         run: |
           mv build/app/outputs/flutter-apk/app-${{ matrix.flavor }}-release.apk \
-             build/app/outputs/flutter-apk/app-${{ matrix.flavor }}-${FILE_VERSION}.apk
-      
+             build/app/outputs/flutter-apk/app-${{ matrix.flavor }}-release-${{ env.FILE_VERSION }}.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.flavor }}-apk
-          path: build/app/outputs/flutter-apk/app-${{ matrix.flavor }}-${FILE_VERSION}.apk
+          path: build/app/outputs/flutter-apk/app-${{ matrix.flavor }}-release-${{ env.FILE_VERSION }}.apk
+
 
       - name: Build AAB
         run: flutter build appbundle --release --flavor ${{ matrix.flavor }} -t lib/main.dart --build-name=${VERSION_NAME} --build-number=${VERSION_CODE}
@@ -86,11 +86,11 @@ jobs:
       - name: Rename AAB
         run: |
           mv build/app/outputs/bundle/${{ matrix.flavor }}Release/app-${{ matrix.flavor }}-release.aab \
-             build/app/outputs/bundle/release/app-${{ matrix.flavor }}-${FILE_VERSION}.aab
-      
+             build/app/outputs/bundle/${{ matrix.flavor }}Release/app-${{ matrix.flavor }}-${{ env.FILE_VERSION }}.aab
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.flavor }}-aab
-          path: build/app/outputs/bundle/release/app-${{ matrix.flavor }}-${FILE_VERSION}.aab
+          path: build/app/outputs/bundle/${{ matrix.flavor }}Release/app-${{ matrix.flavor }}-${{ env.FILE_VERSION }}.aab
+
