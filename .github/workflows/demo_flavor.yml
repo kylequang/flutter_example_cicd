@@ -70,8 +70,9 @@ jobs:
 
       - name: Rename APK
         run: |
-          mv build/app/outputs/flutter-apk/app-release.apk \
+          mv build/app/outputs/flutter-apk/app-${{ matrix.flavor }}-release.apk \
              build/app/outputs/flutter-apk/app-${{ matrix.flavor }}-${FILE_VERSION}.apk
+      
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -84,8 +85,9 @@ jobs:
 
       - name: Rename AAB
         run: |
-          mv build/app/outputs/bundle/release/app-release.aab \
+          mv build/app/outputs/bundle/${{ matrix.flavor }}Release/app-${{ matrix.flavor }}-release.aab \
              build/app/outputs/bundle/release/app-${{ matrix.flavor }}-${FILE_VERSION}.aab
+      
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
